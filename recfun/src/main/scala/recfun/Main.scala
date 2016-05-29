@@ -61,5 +61,19 @@ object Main {
   /**
     * Exercise 3
     */
-  def countChange(money: Int, coins: List[Int]): Int = ???
+  def countChange(money: Int, coins: List[Int]): Int = {
+    def recur(m: Int, xs: List[Int]): Int = {
+      if (xs.isEmpty)
+        if (m == 0) 1 else 0
+      else if (xs.head > m)
+        recur(m, xs.tail)
+      else
+        recur(m, xs.tail) + recur(m - xs.head, xs)
+    }
+
+    if (money <= 0 || coins.isEmpty)
+      0
+    else
+      recur(money, coins.sorted(Ordering[Int].reverse).dropWhile(_ > money))
+  }
 }
