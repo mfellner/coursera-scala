@@ -40,7 +40,23 @@ object Main {
   /**
     * Exercise 2
     */
-  def balance(chars: List[Char]): Boolean = ???
+  def balance(chars: List[Char]): Boolean = {
+    def recur(chars: List[Char], open: Int): Boolean = {
+      if (open < 0)
+        false
+      else if (chars.isEmpty)
+        open == 0
+      else {
+        val x = chars.head match {
+          case '(' => 1
+          case ')' => -1
+          case _ => 0
+        }
+        recur(chars.tail, open + x)
+      }
+    }
+    recur(chars, 0)
+  }
 
   /**
     * Exercise 3
