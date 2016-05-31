@@ -77,6 +77,8 @@ class FunSetSuite extends FunSuite {
     val s1 = singletonSet(1)
     val s2 = singletonSet(2)
     val s3 = singletonSet(3)
+    val s4 = singletonSet(4)
+    val s5 = singletonSet(5)
   }
 
   /**
@@ -147,6 +149,19 @@ class FunSetSuite extends FunSuite {
       assert(!contains(s, 1), "Filter 1")
       assert(!contains(s, 2), "Filter 2")
       assert(contains(s, 3), "Filter 3")
+    }
+  }
+
+  test("forall returns true if all elements in a set match the predicate") {
+    new TestSets {
+      val s = union(s1, union(s2, union(s3, union(s4, s5))))
+      assert(forall(s, x => x < 6), "forall [1-5] < 6")
+      assert(forall(s, x => x > 0), "forall [1-5] > 0")
+      assert(!forall(s, x => x < 4), "forall [1-5] < 4")
+
+      val sMinMax = union(singletonSet(-bound), union(s1, singletonSet(bound)))
+      assert(forall(sMinMax, x => x >= -bound), "forall >= -bound")
+      assert(forall(sMinMax, x => x <= bound), "forall <= +bound")
     }
   }
 }
