@@ -177,4 +177,12 @@ class FunSetSuite extends FunSuite {
       assert(exists(sMinMax, x => x <= bound), "exists <= +bound")
     }
   }
+
+  test("map applies a function to each element of a set and returns a new set") {
+    new TestSets {
+      val s = union(s1, union(s2, s3))
+      assert(FunSets.toString(s) == "{1,2,3}", "map {1,2,3}")
+      assert(FunSets.toString(map(s, x => x + 1)) == "{2,3,4}", "map {2,3,4}")
+    }
+  }
 }

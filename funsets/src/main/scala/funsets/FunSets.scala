@@ -16,11 +16,12 @@ object FunSets {
     */
   def contains(s: Set, elem: Int): Boolean = s(elem)
 
+  def emptySet(): Set = _ => false
+
   /**
     * Returns the set of the one given element.
     */
   def singletonSet(elem: Int): Set = (x: Int) => elem == x
-
 
   /**
     * Returns the union of the two given sets,
@@ -44,7 +45,6 @@ object FunSets {
     * Returns the subset of `s` for which `p` holds.
     */
   def filter(s: Set, p: Int => Boolean): Set = (x: Int) => p(x)
-
 
   /**
     * The bounds for `forall` and `exists` are +/- 1000.
@@ -72,7 +72,14 @@ object FunSets {
   /**
     * Returns a set transformed by applying `f` to each element of `s`.
     */
-  def map(s: Set, f: Int => Int): Set = ???
+  def map(s: Set, f: Int => Int): Set = {
+    def iter(a: Int, s2: Set): Set = {
+      if (a > bound) s2
+      else if (contains(s, a)) iter(a + 1, union(s2, singletonSet(f(a))))
+      else iter(a + 1, s2)
+    }
+    iter(-bound, emptySet())
+  }
 
   /**
     * Displays the contents of a set
