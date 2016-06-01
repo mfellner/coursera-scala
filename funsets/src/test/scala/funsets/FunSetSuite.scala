@@ -164,4 +164,17 @@ class FunSetSuite extends FunSuite {
       assert(forall(sMinMax, x => x <= bound), "forall <= +bound")
     }
   }
+
+  test("exists returns true if at least one element in a set matches the predicate") {
+    new TestSets {
+      val s = union(s1, union(s2, union(s3, union(s4, s5))))
+      assert(exists(s, x => x > 4), "exists [1-5] > 4")
+      assert(exists(s, x => x < 2), "exists [1-5] < 2")
+      assert(!exists(s, x => x > 5), "exists [1-5] > 5")
+
+      val sMinMax = union(singletonSet(-bound), union(s1, singletonSet(bound)))
+      assert(exists(sMinMax, x => x >= -bound), "exists >= -bound")
+      assert(exists(sMinMax, x => x <= bound), "exists <= +bound")
+    }
+  }
 }
