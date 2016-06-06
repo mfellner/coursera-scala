@@ -1,6 +1,6 @@
 package objsets
 
-import TweetReader._
+import java.util.NoSuchElementException
 
 /**
   * A class to represent tweets.
@@ -112,6 +112,8 @@ class Empty extends TweetSet {
 
   override def union(that: TweetSet): TweetSet = that
 
+  override def mostRetweeted: Tweet = throw new NoSuchElementException
+
   override def toString() = "."
 
   /**
@@ -135,6 +137,15 @@ class NonEmpty(elem: Tweet, left: TweetSet = new Empty, right: TweetSet = new Em
   }
 
   override def union(that: TweetSet): TweetSet = ((left union right) union that) incl elem
+
+  override def mostRetweeted: Tweet = {
+    try {
+      val that = (left union right).mostRetweeted
+      if (that.retweets > elem.retweets) that else elem
+    } catch {
+      case e: NoSuchElementException => elem
+    }
+  }
 
   override def toString = "{" + left + elem + right + "}"
 
