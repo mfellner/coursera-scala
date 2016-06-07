@@ -2,6 +2,8 @@ package objsets
 
 import java.util.NoSuchElementException
 
+import scala.annotation.tailrec
+
 /**
   * A class to represent tweets.
   */
@@ -112,7 +114,9 @@ class Empty extends TweetSet {
 
   override def union(that: TweetSet): TweetSet = that
 
-  override def mostRetweeted: Tweet = throw new NoSuchElementException
+  override def mostRetweeted = throw new NoSuchElementException
+
+  override def descendingByRetweet: TweetList = Nil
 
   override def toString() = "."
 
@@ -145,6 +149,11 @@ class NonEmpty(elem: Tweet, left: TweetSet = new Empty, right: TweetSet = new Em
     } catch {
       case e: NoSuchElementException => elem
     }
+  }
+
+  override def descendingByRetweet: TweetList = {
+    val t = this.mostRetweeted
+    new Cons(t, this.remove(t).descendingByRetweet)
   }
 
   override def toString = "{" + left + elem + right + "}"
@@ -196,10 +205,16 @@ object Nil extends TweetList {
   def tail = throw new java.util.NoSuchElementException("tail of EmptyList")
 
   def isEmpty = true
+
+  override def toString = ""
 }
 
 class Cons(val head: Tweet, val tail: TweetList) extends TweetList {
   def isEmpty = false
+
+  override def toString = {
+    head.retweets + ", " + tail.toString()
+  }
 }
 
 
