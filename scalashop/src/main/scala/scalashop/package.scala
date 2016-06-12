@@ -70,4 +70,17 @@ package object scalashop {
     rgba(r / n, g / n, b / n, a / n)
   }
 
+  def split(xs: Seq[Int], tasks: Int): Seq[(Int, Int)] = {
+    if (tasks < 2) List((xs.head, xs.last))
+    else {
+      val n = xs.length / 2
+      val t = tasks.toDouble / 2
+      val t0 = math.ceil(t).toInt
+      val t1 = math.floor(t).toInt
+      split(xs take n + 1, t0) ++ split(xs drop n, t1)
+    }
+  }
+
+  def slices(size: Int, tasks: Int): Seq[(Int, Int)] = split(0 to size, tasks)
+
 }
