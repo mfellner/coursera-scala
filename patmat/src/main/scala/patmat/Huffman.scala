@@ -166,6 +166,7 @@ object Huffman {
       case Fork(left, right, _, _) => bits match {
         case 0 :: tail => getChars(left, tail)
         case 1 :: tail => getChars(right, tail)
+        case _ => throw new IllegalArgumentException
       }
     }
     getChars(tree, bits)
@@ -196,7 +197,20 @@ object Huffman {
     * This function encodes `text` using the code tree `tree`
     * into a sequence of bits.
     */
-  def encode(tree: CodeTree)(text: List[Char]): List[Bit] = ???
+  def encode(tree: CodeTree)(text: List[Char]): List[Bit] = {
+    def getBits(c: Char, subtree: CodeTree): List[Bit] = subtree match {
+      case Leaf(_, _) => Nil
+      case Fork(Leaf(`c`, _), _, _, _) => List(0)
+      case Fork(_, Leaf(`c`, _), _, _) => List(1)
+      case Fork(left: Fork, right: Leaf, _, _) => 0 :: getBits(c, left)
+      case Fork(left: Leaf, right: Fork, _, _) => 1 :: getBits(c, right)
+      case Fork(left: Fork, right: Fork, _, _) =>
+        if (left.chars.contains(c)) 0 :: getBits(c, left)
+        else if (right.chars.contains(c)) 1 :: getBits(c, right)
+        else Nil
+    }
+    text.flatMap((c: Char) => getBits(c, tree))
+  }
 
   // Part 4b: Encoding using code table
 
