@@ -1,5 +1,7 @@
 package patmat
 
+import java.util.NoSuchElementException
+
 import common._
 
 /**
@@ -220,7 +222,9 @@ object Huffman {
     * This function returns the bit sequence that represents the character `char` in
     * the code table `table`.
     */
-  def codeBits(table: CodeTable)(char: Char): List[Bit] = ???
+  def codeBits(table: CodeTable)(char: Char): List[Bit] = table.find {
+    case (c: Char, _) => c == char
+  }.map(_._2).getOrElse(throw new NoSuchElementException(char.toString))
 
   /**
     * Given a code tree, create a code table which contains, for every character in the
@@ -230,14 +234,34 @@ object Huffman {
     * a valid code tree that can be represented as a code table. Using the code tables of the
     * sub-trees, think of how to build the code table for the entire tree.
     */
-  def convert(tree: CodeTree): CodeTable = ???
+  def convert(tree: CodeTree): CodeTable = tree match {
+    case Leaf(_, _) => Nil
+    case Fork(Leaf(cl: Char, _), Leaf(cr, _), _, _) => List((cl, List(0)), (cr, List(1)))
+    case Fork(Leaf(cl: Char, _), right: Fork, _, _) => mergeCodeTables(List((cl, List(0))), convert(right))
+    case Fork(left: Fork, Leaf(cr, _), _, _) => mergeCodeTables(convert(left), List((cr, List(1))))
+    case Fork(left: Fork, right: Fork, _, _) => mergeCodeTables(convert(left), convert(right))
+  }
 
   /**
     * This function takes two code tables and merges them into one. Depending on how you
     * use it in the `convert` method above, this merge method might also do some transformations
     * on the two parameter code tables.
     */
-  def mergeCodeTables(a: CodeTable, b: CodeTable): CodeTable = ???
+  def mergeCodeTables(a: CodeTable, b: CodeTable): CodeTable = {
+    val a2 = a match {
+      case List(single: (Char, List[Bit])) => List(single)
+      case multiple: List[(Char, List[Bit])] => multiple.map {
+        case (c: Char, bits: List[Bit]) => (c, 0 :: bits)
+      }
+    }
+    val b2 = b match {
+      case List(single: (Char, List[Bit])) => List(single)
+      case multiple: List[(Char, List[Bit])] => multiple.map {
+        case (c: Char, bits: List[Bit]) => (c, 1 :: bits)
+      }
+    }
+    a2 ::: b2
+  }
 
   /**
     * This function encodes `text` according to the code tree `tree`.
@@ -245,5 +269,10 @@ object Huffman {
     * To speed up the encoding process, it first converts the code tree to a code table
     * and then uses it to perform the actual encoding.
     */
-  def quickEncode(tree: CodeTree)(text: List[Char]): List[Bit] = ???
+  def quickEncode(tree: CodeTree)(text: List[Char]): List[Bit] = {
+    val table = convert(tree)
+    text.flatMap(char => table.find {
+      case (c: Char, _) => c == char
+    }.map(_._2).getOrElse(throw new NoSuchElementException(char.toString)))
+  }
 }
