@@ -76,7 +76,7 @@ object LineOfSight {
     var i = from
     var t = 0f
     val l = end - from
-    if (l < threshold || l < 2) {
+    if (l - 1 < threshold) {
       new Leaf(from, end, upsweepSequential(input, from, end))
     } else {
       val mid = (from + end) / 2
@@ -105,14 +105,13 @@ object LineOfSight {
     * reduction `tree` in parallel, and then calls `downsweepTraverse` to write
     * the `output` angles.
     */
-  def downsweep(input: Array[Float], output: Array[Float], startingAngle: Float,
-                tree: Tree): Unit = {
+  def downsweep(input: Array[Float], output: Array[Float], startingAngle: Float, tree: Tree): Unit = {
     tree match {
       case Node(left: Tree, right: Tree) => parallel(
         downsweep(input, output, left.maxPrevious, left),
         downsweep(input, output, right.maxPrevious, right)
       )
-      case leaf: Leaf => downsweepSequential(input, output, leaf.maxPrevious, leaf.from, leaf.until)
+      case leaf: Leaf => downsweepSequential(input, output, startingAngle, leaf.from, leaf.until)
     }
   }
 
