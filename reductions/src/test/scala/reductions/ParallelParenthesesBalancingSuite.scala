@@ -135,4 +135,12 @@ class ParallelParenthesesBalancingSuite extends FunSuite {
     check("()(())()(())", 3, true)
     check("()((foo))(bar)((.))", 3, true)
   }
+
+  test("parBalance should invoke the parallel construct 7 times for string '()()()()' and threshold 1"){
+    def check(input: String, threshold: Int, expected: Boolean) =
+      assert(parBalance(input.toArray, threshold) == expected,
+        s"parBalance($input) should be $expected")
+
+    check("()()()()", 1, true)
+  }
 }
