@@ -43,7 +43,7 @@ class KMeans {
   }
 
   def classify(points: GenSeq[Point], means: GenSeq[Point]): GenMap[Point, GenSeq[Point]] = {
-    ???
+    means.map((_, GenSeq())).toMap ++ points.groupBy(findClosest(_, means))
   }
 
   def findAverage(oldMean: Point, points: GenSeq[Point]): Point = if (points.length == 0) oldMean
@@ -60,16 +60,20 @@ class KMeans {
   }
 
   def update(classified: GenMap[Point, GenSeq[Point]], oldMeans: GenSeq[Point]): GenSeq[Point] = {
-    ???
+    (oldMeans zip classified.values).map { case (oldMean, points) => findAverage(oldMean, points) }
   }
 
   def converged(eta: Double)(oldMeans: GenSeq[Point], newMeans: GenSeq[Point]): Boolean = {
-    ???
+    (oldMeans zip newMeans).forall { case (oldMean, newMean) => oldMean.squareDistance(newMean) <= eta }
   }
 
   @tailrec
   final def kMeans(points: GenSeq[Point], means: GenSeq[Point], eta: Double): GenSeq[Point] = {
-    if (???) kMeans(???, ???, ???) else ??? // your implementation need to be tail recursive
+    val newMeans = update(classify(points, means), means)
+    if (!converged(eta)(means, newMeans))
+      kMeans(points, newMeans, eta)
+    else
+      means
   }
 }
 
@@ -87,6 +91,11 @@ class Point(val x: Double, val y: Double, val z: Double) {
   private def round(v: Double): Double = (v * 100).toInt / 100.0
 
   override def toString = s"(${round(x)}, ${round(y)}, ${round(z)})"
+
+  override def equals(that: Any): Boolean = that match {
+    case p: Point => p.x == x && p.y == y && p.z == z
+    case _ => false
+  }
 }
 
 
