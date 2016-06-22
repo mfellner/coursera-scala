@@ -1,11 +1,13 @@
 package kmeans
 
 import java.util.concurrent._
+
 import scala.collection._
 import org.scalatest.FunSuite
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import common._
+
 import scala.math._
 
 object KM extends KMeans
@@ -86,12 +88,21 @@ class KMeansSuite extends FunSuite {
     val mean1 = new Point(1, 0, 0)
     val mean2 = new Point(-1, 0, 0)
     val means: GenSeq[Point] = IndexedSeq(mean1, mean2)
-    val mean3 = new Point(0, 0, 0)
-    val mean4 = new Point(0, 0, 0)
-    val oldMeans: GenSeq[Point] = IndexedSeq(mean3, mean4)
     val classified = GenMap((mean1, GenSeq(p1, p2)), (mean2, GenSeq(p3, p4)))
 
-    checkUpdate(classified, oldMeans, means)
+    checkUpdate(classified, means, means)
   }
 
+  def checkKmeans(points: GenSeq[Point], oldMeans: GenSeq[Point], eta: Double, expected: GenSeq[Point]) {
+    assert(kMeans(points, oldMeans, eta) == expected,
+      s"kMeans($points, $oldMeans, $eta) should equal to $expected")
+  }
+
+  test("[Test Description] 'kMeans' should work for 'points' == GenSeq((0, 0, 1), (0,0, -1), (0,1,0), (0,10,0)) and 'oldMeans' == GenSeq((0, -1, 0), (0, 2, 0)) and 'eta' == 12.25") {
+    val points = GenSeq(new Point(0, 0, 1), new Point(0, 0, -1), new Point(0, 1, 0), new Point(0, 10, 0))
+    val oldMeans = GenSeq(new Point(0, -1, 0), new Point(0, 2, 0))
+    val eta = 12.25
+    val expected = GenSeq(new Point(0.0, 0.0, 0.0), new Point(0.0, 5.5, 0.0))
+    checkKmeans(points, oldMeans, eta, expected)
+  }
 }
