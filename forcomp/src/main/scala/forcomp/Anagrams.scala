@@ -91,23 +91,21 @@ object Anagrams {
     * in the example above could have been displayed in some other order.
     */
   def combinations(occurrences: Occurrences): List[Occurrences] = {
-    val subs = occurrences.flatMap {
-      case (char, int) => for (i <- 1 to int) yield (char, i)
+    occurrences match {
+      case Nil => List(List())
+      case x :: xs =>
+        val singles: List[Occurrences] = (for {
+          i <- 1 to x._2
+        } yield List((x._1, i))).toList
+
+        val combos: List[Occurrences] = (for {
+          i <- 1 to x._2
+          (char, int) <- xs
+          k <- 1 to int
+        } yield List((x._1, i), (char, k))).toList
+
+        singles ::: combos ::: combinations(xs)
     }
-    List() :: (subs.map(List(_)) ::: (for {
-      a <- subs
-      b <- subs.filter(_._1 != a._1)
-    } yield Set(a, b)).distinct.map(_.toList))
-    //    occurrences match {
-    //      case Nil => List()
-    //      case _ => (for {
-    //        (char, int) <- occurrences
-    //        i <- 1 to int
-    //      //        subs <- occurrences.map {
-    //      //          case (char, int) => for (i <- 1 to int) yield (char, i)
-    //      //        }
-    //      } yield (char, i)) :: combinations(occurrences.tail)
-    //    }
   }
 
   /** Subtracts occurrence list `y` from occurrence list `x`.
