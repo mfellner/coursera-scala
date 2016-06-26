@@ -44,6 +44,22 @@ class BarnesHutSuite extends FunSuite {
   }
 
 
+  test("Fork with 4 empty quadrants") {
+    val nw = Empty(17.5f, 27.5f, 5f)
+    val ne = Empty(22.5f, 27.5f, 5f)
+    val sw = Empty(17.5f, 32.5f, 5f)
+    val se = Empty(22.5f, 32.5f, 5f)
+    val quad = Fork(nw, ne, sw, se)
+
+    assert(quad.centerX == 20f, s"${quad.centerX} should be 20f (centerX)")
+    assert(quad.centerY == 30f, s"${quad.centerY} should be 30f (centerY)")
+    assert(quad.mass ~= 0f, s"${quad.mass} should be 0f (mass)")
+    assert(quad.massX ~= 20f, s"${quad.massX} should be 20f (massX)")
+    assert(quad.massY ~= 30f, s"${quad.massY} should be 30f (massY)")
+    assert(quad.total == 0, s"${quad.total} should be 0 (total)")
+  }
+
+
   test("Fork with 3 empty quadrants and 1 leaf (nw)") {
     val b = new Body(123f, 18f, 26f, 0f, 0f)
     val nw = Leaf(17.5f, 27.5f, 5f, Seq(b))
@@ -126,9 +142,23 @@ class BarnesHutSuite extends FunSuite {
     assert(res, s"Body not found in the right sector")
   }
 
+  test("'SectorMatrix.+=' should add a body at (25,47) to the correct bucket of a sector matrix of size 100") {
+    val body = new Body(5, 25, 47, 0.1f, 0.1f)
+    val boundaries = new Boundaries()
+    boundaries.minX = 1
+    boundaries.minY = 1
+    boundaries.maxX = 101
+    boundaries.maxY = 101
+    val sm = new SectorMatrix(boundaries, SECTOR_PRECISION)
+    sm += body
+    val res = sm(2, 3).size == 1 && sm(2, 3).exists(_ == body)
+    assert(res, s"Body not found in the right sector")
+  }
+
   test("'SectorMatrix.combine' should combine two matrices") {
     val body1 = new Body(5, 25, 47, 0.1f, 0.1f)
     val body2 = new Body(8, 49, 62, 0.1f, 0.1f)
+    val body3 = new Body(9, 52, 68, 0.1f, 0.1f)
     val boundaries = new Boundaries()
     boundaries.minX = 1
     boundaries.minY = 1
@@ -138,11 +168,14 @@ class BarnesHutSuite extends FunSuite {
     val sm2 = new SectorMatrix(boundaries, SECTOR_PRECISION)
     sm1 += body1
     sm2 += body2
+    sm2 += body3
     val sm3 = sm1 combine sm2
     val res1 = sm3(2, 3).size == 1 && sm3(2, 3).exists(_ == body1)
-    val res2 = sm3(4, 5).size == 1 && sm3(4, 5).exists(_ == body2)
+    val res2 = sm3(4, 5).size == 2 && sm3(4, 5).exists(_ == body2)
+    val res3 = sm3(4, 5).size == 2 && sm3(4, 5).exists(_ == body3)
     assert(res1, s"Body 1 not found in the right sector")
     assert(res2, s"Body 2 not found in the right sector")
+    assert(res3, s"Body 3 not found in the right sector")
   }
 
   object Simulator extends Simulator(null, new TimeStatistics)
@@ -158,7 +191,7 @@ class BarnesHutSuite extends FunSuite {
     assert(boundaries.minX == 8, "minX should be 8")
     assert(boundaries.maxX == 48, "minX should be 48")
     assert(boundaries.minY == 12, "minY should be 12")
-    assert(boundaries.maxY == 65, "maxY should be 65")
+    assert(boundaries.maxY == 64, "maxY should be 64")
   }
 
   test("'Simulator.mergeBoundaries' should merge boundaries") {
@@ -192,16 +225,19 @@ class BarnesHutSuite extends FunSuite {
   }
 
   test("'Simulator.computeSectorMatrix' should compute the sector matrix") {
-    val body = new Body(5, 0, 97, 0.1f, 0.1f)
+    val body1 = new Body(5, 25, 47, 0.1f, 0.1f)
+    val body2 = new Body(8, 49, 62, 0.1f, 0.1f)
     val boundaries = new Boundaries()
     boundaries.minX = 1
     boundaries.minY = 1
     boundaries.maxX = 97
     boundaries.maxY = 97
 
-    val sm = Simulator.computeSectorMatrix(List(body), boundaries)
-    val res = sm(0, 7).size == 1 && sm(0, 7).exists(_ == body)
-    assert(res, s"Body not found in the right sector")
+    val sm = Simulator.computeSectorMatrix(Seq(body1, body2), boundaries)
+    val res1 = sm(2, 3).size == 1 && sm(2, 3).exists(_ == body1)
+    val res2 = sm(4, 5).size == 1 && sm(4, 5).exists(_ == body2)
+    assert(res1, s"Body 1 not found in the right sector")
+    assert(res2, s"Body 2 not found in the right sector")
   }
 
   test("'Simulator.updateBodies' should update bodies") {

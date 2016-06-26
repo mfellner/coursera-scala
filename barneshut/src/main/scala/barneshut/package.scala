@@ -77,8 +77,16 @@ package object barneshut {
     val centerY: Float = nw.centerY + nw.size / 2
     val size: Float = nw.size + ne.size
     val mass: Float = nw.mass + ne.mass + sw.mass + se.mass
-    val massX: Float = (nw.mass * nw.massX + ne.mass * ne.massX + sw.mass * sw.massX + se.mass * se.massX) / mass
-    val massY: Float = (nw.mass * nw.massY + ne.mass * ne.massY + sw.mass * sw.massY + se.mass * se.massY) / mass
+    val massX: Float =
+      if (mass > 0)
+        (nw.mass * nw.massX + ne.mass * ne.massX + sw.mass * sw.massX + se.mass * se.massX) / mass
+      else
+        centerX
+    val massY: Float =
+      if (mass > 0)
+        (nw.mass * nw.massY + ne.mass * ne.massY + sw.mass * sw.massY + se.mass * se.massY) / mass
+      else
+        centerY
     val total: Int = List(nw, ne, sw, se).foldLeft(0) {
       case (count, q: Empty) => count
       case (count, q: Fork) => count + q.total
@@ -209,9 +217,9 @@ package object barneshut {
     }
 
     def +=(b: Body): SectorMatrix = {
-      val x = (clamp(boundaries.minX, boundaries.maxX - sectorSize)(b.x) / sectorSize).toInt
-      val y = (clamp(boundaries.minY, boundaries.maxY - sectorSize)(b.y) / sectorSize).toInt
-      //      println(s"add body to x:$x y:$y i:${y * sectorPrecision + x})")
+      val x = clamp(0, sectorPrecision)((clamp(boundaries.minX, boundaries.maxX)(b.x) / sectorSize).toInt)
+      val y = clamp(0, sectorPrecision)((clamp(boundaries.minY, boundaries.maxY)(b.y) / sectorSize).toInt)
+      //      println(s"add body to x:$x y:$y i:${y * sectorPrecision + x}) sectorPrecision:$sectorPrecision")
       matrix(y * sectorPrecision + x) += b
       this
     }
