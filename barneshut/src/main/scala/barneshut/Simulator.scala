@@ -11,12 +11,28 @@ import common._
 
 class Simulator(val taskSupport: TaskSupport, val timeStats: TimeStatistics) {
 
+  /**
+    * Updates the minX, minY, maxX and maxY values so that the boundaries include the body.
+    */
   def updateBoundaries(boundaries: Boundaries, body: Body): Boundaries = {
-    ???
+    boundaries.minX = math.min(boundaries.minX, body.x)
+    boundaries.minY = math.min(boundaries.minY, body.y)
+    boundaries.maxX = math.max(boundaries.maxX, body.x + 1)
+    boundaries.maxY = math.max(boundaries.maxY, body.y + 1)
+    boundaries
   }
 
+  /**
+    * Creates a new Boundaries object, which represents the smallest rectangle
+    * that contains both the input boundaries.
+    */
   def mergeBoundaries(a: Boundaries, b: Boundaries): Boundaries = {
-    ???
+    val boundaries = new Boundaries
+    boundaries.minX = math.min(a.minX, b.minX)
+    boundaries.minY = math.min(a.minY, b.minY)
+    boundaries.maxX = math.max(a.maxX, b.maxX)
+    boundaries.maxY = math.max(a.maxY, b.maxY)
+    boundaries
   }
 
   def computeBoundaries(bodies: Seq[Body]): Boundaries = timeStats.timed("boundaries") {
@@ -28,7 +44,9 @@ class Simulator(val taskSupport: TaskSupport, val timeStats: TimeStatistics) {
   def computeSectorMatrix(bodies: Seq[Body], boundaries: Boundaries): SectorMatrix = timeStats.timed("matrix") {
     val parBodies = bodies.par
     parBodies.tasksupport = taskSupport
-    ???
+    val sm = new SectorMatrix(boundaries, SECTOR_PRECISION)
+    bodies.foreach(sm.+=)
+    sm
   }
 
   def computeQuad(sectorMatrix: SectorMatrix): Quad = timeStats.timed("quad") {
@@ -38,7 +56,7 @@ class Simulator(val taskSupport: TaskSupport, val timeStats: TimeStatistics) {
   def updateBodies(bodies: Seq[Body], quad: Quad): Seq[Body] = timeStats.timed("update") {
     val parBodies = bodies.par
     parBodies.tasksupport = taskSupport
-    ???
+    bodies.map(_.updated(quad))
   }
 
   def eliminateOutliers(bodies: Seq[Body], sectorMatrix: SectorMatrix, quad: Quad): Seq[Body] = timeStats.timed("eliminate") {

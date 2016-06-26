@@ -145,6 +145,78 @@ class BarnesHutSuite extends FunSuite {
     assert(res2, s"Body 2 not found in the right sector")
   }
 
+  object Simulator extends Simulator(null, new TimeStatistics)
+
+  test("'Simulator.updateBoundaries' should update boundaries") {
+    val boundaries = new Boundaries()
+    boundaries.minX = 12
+    boundaries.minY = 12
+    boundaries.maxX = 48
+    boundaries.maxY = 48
+    val body = new Body(5, 8, 64, 0.1f, 0.1f)
+    Simulator.updateBoundaries(boundaries, body)
+    assert(boundaries.minX == 8, "minX should be 8")
+    assert(boundaries.maxX == 48, "minX should be 48")
+    assert(boundaries.minY == 12, "minY should be 12")
+    assert(boundaries.maxY == 65, "maxY should be 65")
+  }
+
+  test("'Simulator.mergeBoundaries' should merge boundaries") {
+    val b1 = new Boundaries()
+    b1.minX = 12
+    b1.minY = 12
+    b1.maxX = 48
+    b1.maxY = 48
+    val b2 = new Boundaries()
+    b2.minX = 12
+    b2.minY = 8
+    b2.maxX = 64
+    b2.maxY = 16
+    val b3 = new Boundaries()
+    b3.minX = 8
+    b3.minY = 16
+    b3.maxX = 56
+    b3.maxY = 2
+
+    val b4 = Simulator.mergeBoundaries(b1, b2)
+    val b5 = Simulator.mergeBoundaries(b2, b1)
+    assert(b4 == b5, "mergeBoundaries is not commutative")
+    assert(b4.minX == 12)
+    assert(b4.maxX == 64)
+    assert(b4.minY == 8)
+    assert(b4.maxY == 48)
+
+    val b6 = Simulator.mergeBoundaries(b1, Simulator.mergeBoundaries(b2, b3))
+    val b7 = Simulator.mergeBoundaries(Simulator.mergeBoundaries(b1, b2), b3)
+    assert(b6 == b7, "mergeBoundaries is not associative")
+  }
+
+  test("'Simulator.computeSectorMatrix' should compute the sector matrix") {
+    val body = new Body(5, 0, 97, 0.1f, 0.1f)
+    val boundaries = new Boundaries()
+    boundaries.minX = 1
+    boundaries.minY = 1
+    boundaries.maxX = 97
+    boundaries.maxY = 97
+
+    val sm = Simulator.computeSectorMatrix(List(body), boundaries)
+    val res = sm(0, 7).size == 1 && sm(0, 7).exists(_ == body)
+    assert(res, s"Body not found in the right sector")
+  }
+
+  test("'Simulator.updateBodies' should update bodies") {
+    val b1 = new Body(123f, 18f, 26f, 0f, 0f)
+    val b2 = new Body(524.5f, 24.5f, 25.5f, 0f, 0f)
+    val b3 = new Body(245f, 22.4f, 41f, 0f, 0f)
+
+    val quad = Leaf(15f, 30f, 20f, Seq(b2, b3))
+
+    val bodies = Simulator.updateBodies(Seq(b1, b2, b3), quad)
+
+    assert(bodies.length == 3)
+    assert(bodies.head.xspeed ~= 12.587037f)
+    assert(bodies.head.yspeed ~= 0.015557117f)
+  }
 }
 
 object FloatOps {

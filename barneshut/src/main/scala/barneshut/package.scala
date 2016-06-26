@@ -23,6 +23,23 @@ package object barneshut {
     def centerY = minY + height / 2
 
     override def toString = s"Boundaries($minX, $minY, $maxX, $maxY)"
+
+    def canEqual(other: Any): Boolean = other.isInstanceOf[Boundaries]
+
+    override def equals(other: Any): Boolean = other match {
+      case that: Boundaries =>
+        (that canEqual this) &&
+          minX == that.minX &&
+          minY == that.minY &&
+          maxX == that.maxX &&
+          maxY == that.maxY
+      case _ => false
+    }
+
+    override def hashCode(): Int = {
+      val state = Seq(minX, minY, maxX, maxY)
+      state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+    }
   }
 
   sealed abstract class Quad {
@@ -194,7 +211,7 @@ package object barneshut {
     def +=(b: Body): SectorMatrix = {
       val x = (clamp(boundaries.minX, boundaries.maxX - sectorSize)(b.x) / sectorSize).toInt
       val y = (clamp(boundaries.minY, boundaries.maxY - sectorSize)(b.y) / sectorSize).toInt
-      println(s"add body to x:$x y:$y i:${y * sectorPrecision + x})")
+      //      println(s"add body to x:$x y:$y i:${y * sectorPrecision + x})")
       matrix(y * sectorPrecision + x) += b
       this
     }
