@@ -13,6 +13,6 @@ object Polynomial {
     val bv = b()
     val cv = c()
     if (dv < 0) Set()
-    else Set((-bv + math.sqrt(dv)) / 2 * av, (-bv - math.sqrt(dv)) / 2 * av)
+    else Set((-bv + math.sqrt(dv)) / (2 * av), (-bv - math.sqrt(dv)) / (2 * av))
   }
 }
