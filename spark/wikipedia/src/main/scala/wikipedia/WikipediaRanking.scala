@@ -88,7 +88,20 @@ object WikipediaRanking {
    *   Note: this operation is long-running. It can potentially run for
    *   several seconds.
    */
-  def rankLangsReduceByKey(langs: List[String], rdd: RDD[WikipediaArticle]): List[(String, Int)] = ???
+  def rankLangsReduceByKey(langs: List[String], rdd: RDD[WikipediaArticle]): List[(String, Int)] = rdd
+    .flatMap(article => {
+      langs.map(lang => {
+        val regex = langRegex(lang)
+        article.text match {
+          case regex(_*) => (lang, 1)
+          case _ => (lang, 0)
+        }
+      })
+    })
+    .reduceByKey((a, b) => a + b)
+    .sortBy { case (_, count) => -count }
+    .collect()
+    .toList
 
   def main(args: Array[String]) {
 

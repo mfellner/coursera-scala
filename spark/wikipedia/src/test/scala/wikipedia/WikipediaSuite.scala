@@ -122,6 +122,4 @@ class WikipediaSuite extends FunSuite with BeforeAndAfterAll {
     val res = (ranked.head._1 == "Java")
     assert(res)
   }
-
-
 }
