@@ -1,8 +1,6 @@
 package wikipedia
 
-import org.apache.spark.SparkConf
-import org.apache.spark.SparkContext
-import org.apache.spark.SparkContext._
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 
 import scala.util.matching.Regex
@@ -20,7 +18,9 @@ object WikipediaRanking {
   // Hint: use a combination of `sc.textFile`, `WikipediaData.filePath` and `WikipediaData.parse`
   val wikiRdd: RDD[WikipediaArticle] = sc.textFile(WikipediaData.filePath).map(WikipediaData.parse)
 
-  def langRegex(lang: String): Regex = s"""(?s)(^|.*[\\s'"])$lang($$|[\\s\\.:!?'"]).*""".r
+  //  def langRegex(lang: String): Regex = s"(?s).*\\b${Regex.quote(lang)}\\b.*".r
+
+  def langRegex(lang: String): Regex = s"(?s).*(^| )${Regex.quote(lang)}($$| ).*".r
 
   /** Returns the number of articles on which the language `lang` occurs.
     * Hint1: consider using method `aggregate` on RDD[T].
@@ -59,15 +59,15 @@ object WikipediaRanking {
    */
   def makeIndex(langs: List[String], rdd: RDD[WikipediaArticle]): RDD[(String, Iterable[WikipediaArticle])] = rdd
     .flatMap(article => {
-      langs.map(lang => {
+      langs.flatMap(lang => {
         val regex = langRegex(lang)
         article.text match {
-          case regex(_*) => (lang, Iterable(article))
-          case _ => (lang, Iterable())
+          case regex(_*) => Some(lang, article)
+          case _ => None
         }
       })
     })
-    .reduceByKey((a, b) => a ++ b)
+    .groupByKey()
 
   /* (2) Compute the language ranking again, but now using the inverted index. Can you notice
    *     a performance improvement?
@@ -118,6 +118,7 @@ object WikipediaRanking {
     val langsRanked3: List[(String, Int)] = timed("Part 3: ranking using reduceByKey", rankLangsReduceByKey(langs, wikiRdd))
 
     /* Output the speed of each ranking */
+    println(langsRanked3.mkString("\n"))
     println(timing)
     sc.stop()
   }
