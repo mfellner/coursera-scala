@@ -25,7 +25,17 @@ object WikipediaRanking {
     * Hint3: the only whitespaces are blanks " "
     * Hint4: no need to search in the title :)
     */
-  def occurrencesOfLang(lang: String, rdd: RDD[WikipediaArticle]): Int = ???
+  def occurrencesOfLang(lang: String, rdd: RDD[WikipediaArticle]): Int = {
+    val regex = s"""(?s)(^|.*[\\s'"])$lang($$|[\\s\\.:!?'"]).*""".r
+    rdd.aggregate(0)((count, article) => article.text match {
+      case regex(_*) => count + 1
+      case _ => count
+    }, _ + _)
+  }
+
+  //    rdd.filter(article => article.text.matches(s"""(?s)(^|.*[\\s'"])$lang($$|[\\s\\.:!?'"]).*"""))
+  //      .count()
+  //      .toInt
 
   /* (1) Use `occurrencesOfLang` to compute the ranking of the languages
    *     (`val langs`) by determining the number of Wikipedia articles that
