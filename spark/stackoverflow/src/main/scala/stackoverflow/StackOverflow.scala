@@ -84,15 +84,15 @@ class StackOverflow extends Serializable {
         score = arr(4).toInt,
         tags = if (arr.length >= 6) Some(arr(5).intern()) else None)
     })
-
+  
 
   /** Group the questions and answers together */
   def groupedPostings(postings: RDD[Posting]): RDD[(Int, Iterable[(Posting, Posting)])] = {
-    val questions = postings.filter(_.isQuestion).map(q => (q.id, q))
-    val answers = postings.filter(_.isAnswer).flatMap(a => a.parentId match {
-      case Some(qid) => Some((qid, a))
+    val questions = postings.filter(_.isQuestion).keyBy(_.id)
+    val answers = postings.filter(_.isAnswer).keyBy(_.parentId).flatMap {
+      case (Some(id), answer) => Some(id, answer)
       case _ => None
-    })
+    }
     questions.join(answers).groupByKey()
   }
 
