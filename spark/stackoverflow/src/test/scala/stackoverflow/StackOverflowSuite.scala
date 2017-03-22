@@ -38,5 +38,18 @@ class StackOverflowSuite extends FunSuite with BeforeAndAfterAll {
     assert(instantiatable, "Can't instantiate a StackOverflow object")
   }
 
+  test("groupedPostings") {
+    val postings = StackOverflow.sc.parallelize(Seq(
+      Posting(1, 101, Some(102), None, 10, Some("JavaScript")),
+      Posting(2, 102, None, Some(101), 10, None)
+    ))
 
+    val grouped = testObject.groupedPostings(postings).collect()
+
+    assert(grouped.length == 1)
+    assert(grouped(0)._1 == 101)
+    assert(grouped(0)._2.size == 1)
+    assert(grouped(0)._2.head._1.id == 101, "Posting is not the question.")
+    assert(grouped(0)._2.head._2.id == 102, "Posting is not the answer.")
+  }
 }
