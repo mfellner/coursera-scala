@@ -80,4 +80,21 @@ class StackOverflowSuite extends FunSuite with BeforeAndAfterAll {
     assert(scored(1)._1 == question2)
     assert(scored(1)._2 == 13)
   }
+
+  test("vectorPostings") {
+    val question1 = Posting(1, 101, Some(104), None, 10, Some("PHP"))
+    val question2 = Posting(1, 102, Some(106), None, 10, Some("Java"))
+    val scored = StackOverflow.sc.parallelize(Seq(
+      (question1, 12),
+      (question2, 13)
+    ))
+
+    val vectors = testObject.vectorPostings(scored).collect().toSeq.sortBy({ case (_, score) => score })
+
+    assert(vectors.length == 2)
+    assert(vectors.head._1 == StackOverflow.langSpread * StackOverflow.langs.indexOf("PHP"))
+    assert(vectors.head._2 == 12)
+    assert(vectors(1)._1 == StackOverflow.langSpread * StackOverflow.langs.indexOf("Java"))
+    assert(vectors(1)._2 == 13)
+  }
 }

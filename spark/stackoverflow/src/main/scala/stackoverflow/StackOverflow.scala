@@ -47,10 +47,9 @@ object StackOverflow extends StackOverflow {
 class StackOverflow extends Serializable {
 
   /** Languages */
-  val langs =
-    List(
-      "JavaScript", "Java", "PHP", "Python", "C#", "C++", "Ruby", "CSS",
-      "Objective-C", "Perl", "Scala", "Haskell", "MATLAB", "Clojure", "Groovy")
+  val langs = List(
+    "JavaScript", "Java", "PHP", "Python", "C#", "C++", "Ruby", "CSS",
+    "Objective-C", "Perl", "Scala", "Haskell", "MATLAB", "Clojure", "Groovy")
 
   /** K-means parameter: How "far apart" languages should be for the kmeans algorithm? */
   def langSpread = 50000
@@ -134,7 +133,10 @@ class StackOverflow extends Serializable {
       }
     }
 
-    ???
+    scored.flatMap {
+      case (posting, score) => firstLangInTag(posting.tags, langs).map(index => (index * langSpread, score))
+      case _ => None
+    }
   }
 
 
