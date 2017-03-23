@@ -9,11 +9,11 @@ import scala.reflect.ClassTag
 
 /** A raw stackoverflow posting, either a question or an answer */
 case class Posting(postingType: Int,
-                   id: Int,
-                   acceptedAnswer: Option[Int],
-                   parentId: Option[Int],
-                   score: Int,
-                   tags: Option[String]) extends Serializable {
+  id: Int,
+  acceptedAnswer: Option[Int],
+  parentId: Option[Int],
+  score: Int,
+  tags: Option[String]) extends Serializable {
   def isQuestion = postingType == 1
 
   def isAnswer = postingType == 2
@@ -84,7 +84,7 @@ class StackOverflow extends Serializable {
         score = arr(4).toInt,
         tags = if (arr.length >= 6) Some(arr(5).intern()) else None)
     })
-  
+
 
   /** Group the questions and answers together */
   def groupedPostings(postings: RDD[Posting]): RDD[(Int, Iterable[(Posting, Posting)])] = {
@@ -112,7 +112,9 @@ class StackOverflow extends Serializable {
       highScore
     }
 
-    ???
+    grouped.map {
+      case (_, pairs) => (pairs.head._1, answerHighScore(pairs.map(_._2).toArray))
+    }
   }
 
 
