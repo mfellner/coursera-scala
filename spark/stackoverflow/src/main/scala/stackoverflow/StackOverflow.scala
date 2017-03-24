@@ -192,10 +192,18 @@ class StackOverflow extends Serializable {
 
   def update(classified: RDD[((Int, Int), Iterable[(Int, Int)])], oldMeans: Array[(Int, Int)]): Array[(Int, Int)] = {
     oldMeans.map(oldMean => {
-      val vectors = classified.filter(_ == oldMean).first()._2
+      val vectors = classified.filter(_ == oldMean).take(1) match {
+        case Array(t) => t._2
+        case _ => Iterable()
+      }
       averageVectors(vectors)
     })
   }
+
+//  oldMeans.flatMap(oldMean => classified.filter(_ == oldMean).take(1) match {
+//    case Array(t) => Some(averageVectors(t._2))
+//    case _ => None
+//  })
 
   /**
     * For each vector, find the mean closes to it.
