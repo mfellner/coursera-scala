@@ -32,13 +32,14 @@ object StackOverflow extends StackOverflow {
     val lines = sc.textFile("src/main/resources/stackoverflow/stackoverflow.csv")
     val raw = rawPostings(lines)
     val grouped = groupedPostings(raw)
-    val scored = scoredPostings(grouped)
+    val scored = scoredPostings(grouped).sample(withReplacement = true, 0.1, 0) // TODO: remove downsampling
     val vectors = vectorPostings(scored)
     //    assert(vectors.count() == 2121822, "Incorrect number of vectors: " + vectors.count())
 
     val means = kmeans(sampleVectors(vectors), vectors, debug = true)
-    val results = clusterResults(means, vectors)
-    printResults(results)
+    //    val results = clusterResults(means, vectors) // TODO: implement
+    //    printResults(results)
+    println(means)
   }
 }
 
@@ -189,9 +190,24 @@ class StackOverflow extends Serializable {
   //
   //
 
+  def update(classified: RDD[((Int, Int), Iterable[(Int, Int)])], oldMeans: Array[(Int, Int)]): Array[(Int, Int)] = {
+    oldMeans.map(oldMean => {
+      val vectors = classified.filter(_ == oldMean).first()._2
+      averageVectors(vectors)
+    })
+  }
+
+  /**
+    * For each vector, find the mean closes to it.
+    *
+    * @return Map of each mean to the vectors closest to it.
+    */
+  def classify(vectors: RDD[(Int, Int)], means: Array[(Int, Int)]): RDD[((Int, Int), Iterable[(Int, Int)])] =
+    vectors.groupBy(vector => means(findClosest(vector, means)))
+
   /** Main kmeans computation */
   @tailrec final def kmeans(means: Array[(Int, Int)], vectors: RDD[(Int, Int)], iter: Int = 1, debug: Boolean = false): Array[(Int, Int)] = {
-    val newMeans = means.clone() // you need to compute newMeans
+    val newMeans = update(classify(vectors, means), means)
 
     // TODO: Fill in the newMeans array
     val distance = euclideanDistance(means, newMeans)
@@ -248,7 +264,12 @@ class StackOverflow extends Serializable {
     sum
   }
 
-  /** Return the closest point */
+  /**
+    * Return the closest point.
+    *
+    * @return Index of the closest mean int the input array.
+    */
+
   def findClosest(p: (Int, Int), centers: Array[(Int, Int)]): Int = {
     var bestIndex = 0
     var closest = Double.PositiveInfinity
