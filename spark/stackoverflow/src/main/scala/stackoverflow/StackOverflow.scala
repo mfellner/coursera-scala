@@ -32,14 +32,14 @@ object StackOverflow extends StackOverflow {
     val lines = sc.textFile("src/main/resources/stackoverflow/stackoverflow.csv")
     val raw = rawPostings(lines)
     val grouped = groupedPostings(raw)
-    val scored = scoredPostings(grouped).sample(withReplacement = true, 0.1, 0) // TODO: remove downsampling
+    val scored = scoredPostings(grouped)//.sample(withReplacement = true, 0.1, 0) // TODO: remove downsampling
     val vectors = vectorPostings(scored)
     //    assert(vectors.count() == 2121822, "Incorrect number of vectors: " + vectors.count())
 
     val means = kmeans(sampleVectors(vectors), vectors, debug = true)
-    //    val results = clusterResults(means, vectors) // TODO: implement
-    //    printResults(results)
-    println(means)
+    val results = clusterResults(means, vectors)
+    printResults(results)
+    //    println(means)
   }
 }
 
@@ -320,12 +320,26 @@ class StackOverflow extends Serializable {
     val closestGrouped = closest.groupByKey()
 
     val median = closestGrouped.mapValues { vs =>
-      val langLabel: String = ???
+      val langOccurences = vs.map(_._1).groupBy(x => x).mapValues(_.size)
+      val langIndex = langOccurences.maxBy(_._2)._1
+      val langLabel: String = langs(langIndex / langSpread)
       // most common language in the cluster
-      val langPercent: Double = ???
+      val langPercent: Double = if (langOccurences.size == 1) 100F
+      else langOccurences(langIndex) / (langOccurences - langIndex).values.sum.toDouble
       // percent of the questions in the most common language
-      val clusterSize: Int = ???
-      val medianScore: Int = ???
+      val vsArray = vs.toArray
+      val clusterSize: Int = vsArray.length
+      val isOdd: Boolean = vsArray.length % 2 != 0
+      val medianScore: Int = if (vsArray.length == 1)
+        vsArray.head._2
+      else if (isOdd) {
+        val i = (vsArray.length + 1) / 2
+        vsArray(i)._2
+      } else {
+        val i1 = vsArray.length / 2
+        val i2 = i1 - 1
+        (vsArray(i1)._2 + vsArray(i2)._2) / 2
+      }
 
       (langLabel, langPercent, clusterSize, medianScore)
     }
@@ -338,6 +352,14 @@ class StackOverflow extends Serializable {
     println("  Score  Dominant language (%percent)  Questions")
     println("================================================")
     for ((lang, percent, size, score) <- results)
-      println(f"${score}%7d  ${lang}%-17s (${percent}%-5.1f%%)      ${size}%7d")
+      println(f"${
+        score
+      }%7d  ${
+        lang
+      }%-17s (${
+        percent
+      }%-5.1f%%)      ${
+        size
+      }%7d")
   }
 }
