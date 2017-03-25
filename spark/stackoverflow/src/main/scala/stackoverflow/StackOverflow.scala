@@ -9,11 +9,11 @@ import scala.reflect.ClassTag
 
 /** A raw stackoverflow posting, either a question or an answer */
 case class Posting(postingType: Int,
-  id: Int,
-  acceptedAnswer: Option[Int],
-  parentId: Option[Int],
-  score: Int,
-  tags: Option[String]) extends Serializable {
+                   id: Int,
+                   acceptedAnswer: Option[Int],
+                   parentId: Option[Int],
+                   score: Int,
+                   tags: Option[String]) extends Serializable {
   def isQuestion = postingType == 1
 
   def isAnswer = postingType == 2
@@ -23,7 +23,7 @@ case class Posting(postingType: Int,
 /** The main class */
 object StackOverflow extends StackOverflow {
 
-  @transient lazy val conf: SparkConf = new SparkConf().setMaster("local").setAppName("StackOverflow")
+  @transient lazy val conf: SparkConf = new SparkConf().setMaster("local[3]").setAppName("StackOverflow")
   @transient lazy val sc: SparkContext = new SparkContext(conf)
 
   /** Main function */
@@ -134,10 +134,12 @@ class StackOverflow extends Serializable {
       }
     }
 
-    scored.flatMap {
+    val vectors = scored.flatMap {
       case (posting, score) => firstLangInTag(posting.tags, langs).map(index => (index * langSpread, score))
       case _ => None
     }
+
+    vectors.cache()
   }
 
 
@@ -191,19 +193,19 @@ class StackOverflow extends Serializable {
   //
 
   def update(classified: RDD[((Int, Int), Iterable[(Int, Int)])], oldMeans: Array[(Int, Int)]): Array[(Int, Int)] = {
-    oldMeans.map(oldMean => {
-      val vectors = classified.filter(_ == oldMean).take(1) match {
-        case Array(t) => t._2
-        case _ => Iterable()
-      }
-      averageVectors(vectors)
+    //    oldMeans.map(oldMean => {
+    //      val vectors = classified.filter(_ == oldMean).take(1) match {
+    //        case Array(t) => t._2
+    //        case _ => Iterable()
+    //      }
+    //      averageVectors(vectors)
+    //    })
+    oldMeans.flatMap(oldMean => classified.filter(_._1 == oldMean).take(1) match {
+      case Array(t) => Some(averageVectors(t._2))
+      case _ => None
     })
   }
 
-//  oldMeans.flatMap(oldMean => classified.filter(_ == oldMean).take(1) match {
-//    case Array(t) => Some(averageVectors(t._2))
-//    case _ => None
-//  })
 
   /**
     * For each vector, find the mean closes to it.
@@ -211,7 +213,7 @@ class StackOverflow extends Serializable {
     * @return Map of each mean to the vectors closest to it.
     */
   def classify(vectors: RDD[(Int, Int)], means: Array[(Int, Int)]): RDD[((Int, Int), Iterable[(Int, Int)])] =
-    vectors.groupBy(vector => means(findClosest(vector, means)))
+    vectors.groupBy(vector => means(findClosest(vector, means))).cache()
 
   /** Main kmeans computation */
   @tailrec final def kmeans(means: Array[(Int, Int)], vectors: RDD[(Int, Int)], iter: Int = 1, debug: Boolean = false): Array[(Int, Int)] = {
