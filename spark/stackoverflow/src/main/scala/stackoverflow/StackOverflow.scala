@@ -217,9 +217,18 @@ class StackOverflow extends Serializable {
 
   /** Main kmeans computation */
   @tailrec final def kmeans(means: Array[(Int, Int)], vectors: RDD[(Int, Int)], iter: Int = 1, debug: Boolean = false): Array[(Int, Int)] = {
-    val newMeans = update(classify(vectors, means), means)
+    //    val newMeans = update(classify(vectors, means), means)
 
-    //    val classified = vectors.groupBy(vector => means(findClosest(vector, means))).collect()
+    val newMeans = means.clone()
+    val classified = vectors.groupBy(vector => means(findClosest(vector, means)))
+    //.collect()
+    val oldMeanToNewAverage = classified.map(x => (x._1, averageVectors(x._2))).collect().toMap
+    for (i <- newMeans.indices) {
+      if (oldMeanToNewAverage.contains(newMeans(i))) {
+        newMeans(i) = oldMeanToNewAverage(newMeans(i))
+      }
+    }
+    //    classified.foreach(entry => newMeans(entry._1) = entry._2)
     //    val newMeans = means.zipWithIndex.map {
     //      case (_, index) => averageVectors(classified(index)._2)
     //    }
