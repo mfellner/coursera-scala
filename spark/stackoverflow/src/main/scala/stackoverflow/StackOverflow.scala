@@ -32,7 +32,7 @@ object StackOverflow extends StackOverflow {
     val lines = sc.textFile("src/main/resources/stackoverflow/stackoverflow.csv")
     val raw = rawPostings(lines)
     val grouped = groupedPostings(raw)
-    val scored = scoredPostings(grouped)//.sample(withReplacement = true, 0.1, 0) // TODO: remove downsampling
+    val scored = scoredPostings(grouped).sample(withReplacement = true, 0.1, 0) // TODO: remove downsampling
     val vectors = vectorPostings(scored)
     //    assert(vectors.count() == 2121822, "Incorrect number of vectors: " + vectors.count())
 
@@ -200,9 +200,9 @@ class StackOverflow extends Serializable {
     //      }
     //      averageVectors(vectors)
     //    })
-    oldMeans.flatMap(oldMean => classified.filter(_._1 == oldMean).take(1) match {
-      case Array(t) => Some(averageVectors(t._2))
-      case _ => None
+    oldMeans.map(oldMean => classified.filter(_._1 == oldMean).take(1) match {
+      case Array(t) => averageVectors(t._2)
+      case _ => oldMean
     })
   }
 
@@ -218,6 +218,11 @@ class StackOverflow extends Serializable {
   /** Main kmeans computation */
   @tailrec final def kmeans(means: Array[(Int, Int)], vectors: RDD[(Int, Int)], iter: Int = 1, debug: Boolean = false): Array[(Int, Int)] = {
     val newMeans = update(classify(vectors, means), means)
+
+    //    val classified = vectors.groupBy(vector => means(findClosest(vector, means))).collect()
+    //    val newMeans = means.zipWithIndex.map {
+    //      case (_, index) => averageVectors(classified(index)._2)
+    //    }
 
     // TODO: Fill in the newMeans array
     val distance = euclideanDistance(means, newMeans)
@@ -327,7 +332,7 @@ class StackOverflow extends Serializable {
       val langPercent: Double = if (langOccurences.size == 1) 100F
       else langOccurences(langIndex) / (langOccurences - langIndex).values.sum.toDouble
       // percent of the questions in the most common language
-      val vsArray = vs.toArray
+      val vsArray = vs.toArray.sortBy(_._2)
       val clusterSize: Int = vsArray.length
       val isOdd: Boolean = vsArray.length % 2 != 0
       val medianScore: Int = if (vsArray.length == 1)
