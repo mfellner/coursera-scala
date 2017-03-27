@@ -6,6 +6,9 @@ import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
 import annotation.tailrec
 import scala.reflect.ClassTag
+import org.apache.log4j.LogManager
+import org.apache.log4j.Level
+
 
 /** A raw stackoverflow posting, either a question or an answer */
 case class Posting(postingType: Int,
@@ -17,6 +20,14 @@ case class Posting(postingType: Int,
   def isQuestion = postingType == 1
 
   def isAnswer = postingType == 2
+}
+
+object Posting {
+  def newQuestion(id: Int, acceptedAnswer: Int, score: Int, tags: String) =
+    Posting(1, id, Some(acceptedAnswer), None, score, Some(tags))
+
+  def newAnswer(id: Int, parent: Int, score: Int) =
+    Posting(2, id, None, Some(parent), score, None)
 }
 
 
@@ -32,9 +43,12 @@ object StackOverflow extends StackOverflow {
     val lines = sc.textFile("src/main/resources/stackoverflow/stackoverflow.csv")
     val raw = rawPostings(lines)
     val grouped = groupedPostings(raw)
-    val scored = scoredPostings(grouped).sample(withReplacement = true, 0.1, 0) // TODO: remove downsampling
+    val scored = scoredPostings(grouped)
+    //.sample(withReplacement = true, 0.1, 0) // TODO: remove downsampling
     val vectors = vectorPostings(scored)
     //    assert(vectors.count() == 2121822, "Incorrect number of vectors: " + vectors.count())
+
+    LogManager.getRootLogger.setLevel(Level.WARN)
 
     val means = kmeans(sampleVectors(vectors), vectors, debug = true)
     val results = clusterResults(means, vectors)
@@ -220,14 +234,19 @@ class StackOverflow extends Serializable {
     //    val newMeans = update(classify(vectors, means), means)
 
     val newMeans = means.clone()
-    val classified = vectors.groupBy(vector => means(findClosest(vector, means)))
-    //.collect()
-    val oldMeanToNewAverage = classified.map(x => (x._1, averageVectors(x._2))).collect().toMap
-    for (i <- newMeans.indices) {
-      if (oldMeanToNewAverage.contains(newMeans(i))) {
-        newMeans(i) = oldMeanToNewAverage(newMeans(i))
+    val oldMeans2Vectors = vectors.map(p => (means(findClosest(p, means)), p)).groupByKey()
+    val oldMeans2NewAverages = oldMeans2Vectors.mapValues(averageVectors).collectAsMap()
+
+    for (i <- means.indices) {
+      val oldMean = means(i)
+      if (oldMeans2NewAverages.contains(oldMean)) {
+        newMeans(i) = oldMeans2NewAverages(oldMean)
       }
     }
+
+    //    val classified = vectors.groupBy(vector => means(findClosest(vector, means))).collect()
+
+    //    classified.foreach()
     //    classified.foreach(entry => newMeans(entry._1) = entry._2)
     //    val newMeans = means.zipWithIndex.map {
     //      case (_, index) => averageVectors(classified(index)._2)
