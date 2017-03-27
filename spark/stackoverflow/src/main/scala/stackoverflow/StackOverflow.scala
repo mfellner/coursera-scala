@@ -206,60 +206,18 @@ class StackOverflow extends Serializable {
   //
   //
 
-  def update(classified: RDD[((Int, Int), Iterable[(Int, Int)])], oldMeans: Array[(Int, Int)]): Array[(Int, Int)] = {
-    //    oldMeans.map(oldMean => {
-    //      val vectors = classified.filter(_ == oldMean).take(1) match {
-    //        case Array(t) => t._2
-    //        case _ => Iterable()
-    //      }
-    //      averageVectors(vectors)
-    //    })
-    oldMeans.map(oldMean => classified.filter(_._1 == oldMean).take(1) match {
-      case Array(t) => averageVectors(t._2)
-      case _ => oldMean
-    })
-  }
-
-
-  /**
-    * For each vector, find the mean closes to it.
-    *
-    * @return Map of each mean to the vectors closest to it.
-    */
-  def classify(vectors: RDD[(Int, Int)], means: Array[(Int, Int)]): RDD[((Int, Int), Iterable[(Int, Int)])] =
-    vectors.groupBy(vector => means(findClosest(vector, means))).cache()
-
   /** Main kmeans computation */
   @tailrec final def kmeans(means: Array[(Int, Int)], vectors: RDD[(Int, Int)], iter: Int = 1, debug: Boolean = false): Array[(Int, Int)] = {
-    //    val newMeans = update(classify(vectors, means), means)
 
     val newMeans = means.clone()
-    //    val oldMeans2Vectors = vectors.map(p => (means(findClosest(p, means)), p)).groupByKey()
-    //    val oldMeans2NewAverages = oldMeans2Vectors.mapValues(averageVectors).collectAsMap()
 
-    val meansIndex2Vectors = vectors.map(p => (findClosest(p, means), p)).groupByKey()
+    val meansIndex2Vectors = vectors.groupBy(findClosest(_, means))
     val meansIndex2Averages = meansIndex2Vectors.mapValues(averageVectors)
 
     meansIndex2Averages.collect().foreach({
       case (i, averages) => newMeans.update(i, averages)
     })
 
-    //    for (i <- means.indices) {
-    //      val oldMean = means(i)
-    //      if (oldMeans2NewAverages.contains(oldMean)) {
-    //        newMeans(i) = oldMeans2NewAverages(oldMean)
-    //      }
-    //    }
-
-    //    val classified = vectors.groupBy(vector => means(findClosest(vector, means))).collect()
-
-    //    classified.foreach()
-    //    classified.foreach(entry => newMeans(entry._1) = entry._2)
-    //    val newMeans = means.zipWithIndex.map {
-    //      case (_, index) => averageVectors(classified(index)._2)
-    //    }
-
-    // TODO: Fill in the newMeans array
     val distance = euclideanDistance(means, newMeans)
 
     if (debug) {
