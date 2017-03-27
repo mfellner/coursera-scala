@@ -234,15 +234,22 @@ class StackOverflow extends Serializable {
     //    val newMeans = update(classify(vectors, means), means)
 
     val newMeans = means.clone()
-    val oldMeans2Vectors = vectors.map(p => (means(findClosest(p, means)), p)).groupByKey()
-    val oldMeans2NewAverages = oldMeans2Vectors.mapValues(averageVectors).collectAsMap()
+    //    val oldMeans2Vectors = vectors.map(p => (means(findClosest(p, means)), p)).groupByKey()
+    //    val oldMeans2NewAverages = oldMeans2Vectors.mapValues(averageVectors).collectAsMap()
 
-    for (i <- means.indices) {
-      val oldMean = means(i)
-      if (oldMeans2NewAverages.contains(oldMean)) {
-        newMeans(i) = oldMeans2NewAverages(oldMean)
-      }
-    }
+    val meansIndex2Vectors = vectors.map(p => (findClosest(p, means), p)).groupByKey()
+    val meansIndex2Averages = meansIndex2Vectors.mapValues(averageVectors)
+
+    meansIndex2Averages.collect().foreach({
+      case (i, averages) => newMeans.update(i, averages)
+    })
+
+    //    for (i <- means.indices) {
+    //      val oldMean = means(i)
+    //      if (oldMeans2NewAverages.contains(oldMean)) {
+    //        newMeans(i) = oldMeans2NewAverages(oldMean)
+    //      }
+    //    }
 
     //    val classified = vectors.groupBy(vector => means(findClosest(vector, means))).collect()
 
