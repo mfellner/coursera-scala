@@ -44,9 +44,9 @@ object StackOverflow extends StackOverflow {
     val raw = rawPostings(lines)
     val grouped = groupedPostings(raw)
     val scored = scoredPostings(grouped)
-    //.sample(withReplacement = true, 0.1, 0) // TODO: remove downsampling
+    // .sample(withReplacement = true, 0.1, 0)
     val vectors = vectorPostings(scored)
-    //    assert(vectors.count() == 2121822, "Incorrect number of vectors: " + vectors.count())
+    // assert(vectors.count() == 2121822, "Incorrect number of vectors: " + vectors.count())
 
     LogManager.getRootLogger.setLevel(Level.WARN)
 
@@ -318,26 +318,34 @@ class StackOverflow extends Serializable {
     val closestGrouped = closest.groupByKey()
 
     val median = closestGrouped.mapValues { vs =>
-      val langOccurences = vs.map(_._1).groupBy(x => x).mapValues(_.size)
+      val langOccurences = vs.map(_._1).groupBy(identity).mapValues(_.size)
       val langIndex = langOccurences.maxBy(_._2)._1
       val langLabel: String = langs(langIndex / langSpread)
       // most common language in the cluster
-      val langPercent: Double = if (langOccurences.size == 1) 100F
-      else langOccurences(langIndex) / (langOccurences - langIndex).values.sum.toDouble
+
+      val langPercent: Double =
+        if (langOccurences.size == 1) {
+          100F
+        } else {
+          langOccurences(langIndex).toDouble / langOccurences.filterKeys(_ != langIndex).values.sum.toDouble
+        }
       // percent of the questions in the most common language
+
       val vsArray = vs.toArray.sortBy(_._2)
       val clusterSize: Int = vsArray.length
+
       val isOdd: Boolean = vsArray.length % 2 != 0
-      val medianScore: Int = if (vsArray.length == 1)
-        vsArray.head._2
-      else if (isOdd) {
-        val i = (vsArray.length + 1) / 2
-        vsArray(i)._2
-      } else {
-        val i1 = vsArray.length / 2
-        val i2 = i1 - 1
-        (vsArray(i1)._2 + vsArray(i2)._2) / 2
-      }
+      val medianScore: Int =
+        if (vsArray.length == 1) {
+          vsArray.head._2
+        } else if (isOdd) {
+          val i = (vsArray.length - 1) / 2
+          vsArray(i)._2
+        } else {
+          val i1 = vsArray.length / 2
+          val i2 = i1 - 1
+          (vsArray(i1)._2 + vsArray(i2)._2) / 2
+        }
 
       (langLabel, langPercent, clusterSize, medianScore)
     }
@@ -349,15 +357,8 @@ class StackOverflow extends Serializable {
     println("Resulting clusters:")
     println("  Score  Dominant language (%percent)  Questions")
     println("================================================")
-    for ((lang, percent, size, score) <- results)
-      println(f"${
-        score
-      }%7d  ${
-        lang
-      }%-17s (${
-        percent
-      }%-5.1f%%)      ${
-        size
-      }%7d")
+    for ((lang, percent, size, score) <- results) {
+      println(f"$score%7d  $lang%-17s ($percent%-5.1f%%)      $size%7d")
+    }
   }
 }
