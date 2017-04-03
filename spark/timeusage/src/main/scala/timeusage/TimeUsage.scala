@@ -42,14 +42,12 @@ object TimeUsage {
     // Compute the schema based on the first line of the CSV file
     val schema = dfSchema(headerColumns)
 
-    val data =
-      rdd
-        .mapPartitionsWithIndex((i, it) => if (i == 0) it.drop(1) else it) // skip the header line
-        .map(_.split(",").to[List])
-        .map(row)
+    val data = rdd
+      .mapPartitionsWithIndex((i, it) => if (i == 0) it.drop(1) else it) // skip the header line
+      .map(_.split(",").to[List])
+      .map(row)
 
-    val dataFrame =
-      spark.createDataFrame(data, schema)
+    val dataFrame = spark.createDataFrame(data, schema)
 
     (headerColumns, dataFrame)
   }
@@ -62,15 +60,16 @@ object TimeUsage {
     *         have type Double. None of the fields are nullable.
     * @param columnNames Column names of the DataFrame
     */
-  def dfSchema(columnNames: List[String]): StructType =
-    ???
+  def dfSchema(columnNames: List[String]): StructType = StructType(StructField(
+    columnNames.head,
+    StringType,
+    nullable = false) :: columnNames.tail.map(StructField(_, DoubleType, nullable = false)))
 
 
   /** @return An RDD Row compatible with the schema produced by `dfSchema`
     * @param line Raw fields
     */
-  def row(line: List[String]): Row =
-    ???
+  def row(line: List[String]): Row = Row.fromSeq(line.head :: line.tail.map(_.toDouble))
 
   /** @return The initial data frame columns partitioned in three groups: primary needs (sleeping, eating, etc.),
     *         work and other (leisure activities)
