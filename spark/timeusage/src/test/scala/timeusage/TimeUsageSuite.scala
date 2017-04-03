@@ -25,4 +25,17 @@ class TimeUsageSuite extends FunSuite with BeforeAndAfterAll {
     for (i <- 1 until head.length)
       assert(head(i).isInstanceOf[Double])
   }
+
+  test("classifiedColumns") {
+    val (headerColumns, _) = TimeUsage.read("/timeusage/atussum.csv")
+
+    val (primary, working, other) = TimeUsage.classifiedColumns(headerColumns)
+    assert(primary.nonEmpty)
+    assert(primary.nonEmpty)
+    assert(primary.nonEmpty)
+    assert(primary.length + working.length + other.length === 455)
+    assert(primary.toSet - working.toSet - other.toSet === primary.toSet)
+    assert(working.toSet - primary.toSet - other.toSet === working.toSet)
+    assert(other.toSet - primary.toSet - working.toSet === other.toSet)
+  }
 }
