@@ -3,7 +3,9 @@ package timeusage
 import java.nio.file.Paths
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.functions.udf
 
 /** Main class */
 object TimeUsage {
@@ -103,10 +105,10 @@ object TimeUsage {
     * @param otherColumns        List of columns containing time spent doing other activities
     * @param df                  DataFrame whose schema matches the given column lists
     *
-    *                            This methods builds an intermediate DataFrame that sums up all the columns of each group of activity into
-    *                            a single column.
-    *
+    *                            This methods builds an intermediate DataFrame that sums up all the columns
+    *                            of each group of activity into  a single column.
     *                            The resulting DataFrame should have the following columns:
+    *
     * - working: value computed from the “telfs” column of the given DataFrame:
     *   - "working" if 1 <= telfs < 3
     *   - "not working" otherwise
@@ -120,23 +122,47 @@ object TimeUsage {
     * - work: sum of all the `workColumns`, in hours
     * - other: sum of all the `otherColumns`, in hours
     *
-    *                            Finally, the resulting DataFrame should exclude people that are not employable (ie telfs = 5).
+    *                            Finally, the resulting DataFrame should exclude people
+    *                            that are not employable (ie telfs = 5).
     *
-    *                            Note that the initial DataFrame contains time in ''minutes''. You have to convert it into ''hours''.
+    *                            Note that the initial DataFrame contains time in ''minutes''.
+    *                            You have to convert it into ''hours''.
     */
   def timeUsageSummary(primaryNeedsColumns: List[Column],
                        workColumns: List[Column],
                        otherColumns: List[Column],
                        df: DataFrame): DataFrame = {
-    val workingStatusProjection: Column = ???
-    val sexProjection: Column = ???
-    val ageProjection: Column = ???
 
-    val primaryNeedsProjection: Column = ???
-    val workProjection: Column = ???
-    val otherProjection: Column = ???
-    df
-      .select(workingStatusProjection, sexProjection, ageProjection, primaryNeedsProjection, workProjection, otherProjection)
+    val projectWorkingStatus = udf((telfs: Double) => telfs match {
+      case i: Double if 1 <= i && i < 3 => "working"
+      case _ => "not working"
+    })
+
+    val projectSex = udf((tesex: Double) => tesex match {
+      case 1F => "make"
+      case _ => "female"
+    })
+
+    val projectAge = udf((teage: Double) => teage match {
+      case i: Double if 15 <= i && i <= 22 => "young"
+      case i: Double if 23 <= i && i <= 55 => "active"
+      case _ => "elder"
+    })
+
+    val intermediaryDf = df
+      .withColumn("telfs_", projectWorkingStatus('telfs))
+      .withColumn("tesex_", projectSex('tesex))
+      .withColumn("teage_", projectAge('teage))
+
+    val workingStatusProjection: Column = intermediaryDf("telfs_")
+    val sexProjection: Column = intermediaryDf("tesex_")
+    val ageProjection: Column = intermediaryDf("teage_")
+
+    val primaryNeedsProjection: Column = df.select(primaryNeedsColumns.reduce(_ + _) as "sum1")("sum1")
+    val workProjection: Column = df.select(workColumns.reduce(_ + _) as "sum2")("sum2")
+    val otherProjection: Column = df.select(otherColumns.reduce(_ + _) as "sum3")("sum3")
+
+    df.select(workingStatusProjection, sexProjection, ageProjection, primaryNeedsProjection, workProjection, otherProjection)
       .where($"telfs" <= 4) // Discard people who are not in labor force
   }
 
