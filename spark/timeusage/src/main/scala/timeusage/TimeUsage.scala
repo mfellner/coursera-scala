@@ -17,7 +17,7 @@ object TimeUsage {
     SparkSession
       .builder()
       .appName("Time Usage")
-      .config("spark.master", "local")
+      .config("spark.master", "local[3]")
       .getOrCreate()
 
   // For implicit conversions like converting RDDs to DataFrames
@@ -133,37 +133,42 @@ object TimeUsage {
                        otherColumns: List[Column],
                        df: DataFrame): DataFrame = {
 
-    val projectWorkingStatus = udf((telfs: Double) => telfs match {
-      case i: Double if 1 <= i && i < 3 => "working"
-      case _ => "not working"
-    })
+    //    val projectWorkingStatus = udf((telfs: Double) => telfs match {
+    //      case i: Double if 1 <= i && i < 3 => "working"
+    //      case _ => "not working"
+    //    })
+    //
+    //    val projectSex = udf((tesex: Double) => tesex match {
+    //      case 1F => "make"
+    //      case _ => "female"
+    //    })
+    //
+    //    val projectAge = udf((teage: Double) => teage match {
+    //      case i: Double if 15 <= i && i <= 22 => "young"
+    //      case i: Double if 23 <= i && i <= 55 => "active"
+    //      case _ => "elder"
+    //    })
 
-    val projectSex = udf((tesex: Double) => tesex match {
-      case 1F => "make"
-      case _ => "female"
-    })
+    //    val intermediaryDf = df
+    //      .withColumn("telfs_", projectWorkingStatus('telfs))
+    //      .withColumn("tesex_", projectSex('tesex))
+    //      .withColumn("teage_", projectAge('teage))
 
-    val projectAge = udf((teage: Double) => teage match {
-      case i: Double if 15 <= i && i <= 22 => "young"
-      case i: Double if 23 <= i && i <= 55 => "active"
-      case _ => "elder"
-    })
+    val workingStatusProjection: Column = $"telfs"
+    val sexProjection: Column = $"tesex"
+    val ageProjection: Column = $"teage"
 
-    val intermediaryDf = df
-      .withColumn("telfs_", projectWorkingStatus('telfs))
-      .withColumn("tesex_", projectSex('tesex))
-      .withColumn("teage_", projectAge('teage))
+    val primaryNeedsProjection: Column = primaryNeedsColumns.reduce(_ + _).as("primaryNeeds")
+    val workProjection: Column = workColumns.reduce(_ + _).as("work")
+    val otherProjection: Column = otherColumns.reduce(_ + _).as("other")
 
-    val workingStatusProjection: Column = intermediaryDf("telfs_")
-    val sexProjection: Column = intermediaryDf("tesex_")
-    val ageProjection: Column = intermediaryDf("teage_")
-
-    val primaryNeedsProjection: Column = df.select(primaryNeedsColumns.reduce(_ + _) as "sum1")("sum1")
-    val workProjection: Column = df.select(workColumns.reduce(_ + _) as "sum2")("sum2")
-    val otherProjection: Column = df.select(otherColumns.reduce(_ + _) as "sum3")("sum3")
-
-    df.select(workingStatusProjection, sexProjection, ageProjection, primaryNeedsProjection, workProjection, otherProjection)
-      .where($"telfs" <= 4) // Discard people who are not in labor force
+    df.select(
+      workingStatusProjection,
+      sexProjection,
+      ageProjection,
+      primaryNeedsProjection,
+      workProjection,
+      otherProjection).where($"telfs" <= 4) // Discard people who are not in labor force
   }
 
   /** @return the average daily time (in hours) spent in primary needs, working or leisure, grouped by the different

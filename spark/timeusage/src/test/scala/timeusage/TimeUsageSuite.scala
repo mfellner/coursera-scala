@@ -31,8 +31,8 @@ class TimeUsageSuite extends FunSuite with BeforeAndAfterAll {
 
     val (primary, working, other) = TimeUsage.classifiedColumns(headerColumns)
     assert(primary.nonEmpty)
-    assert(primary.nonEmpty)
-    assert(primary.nonEmpty)
+    assert(working.nonEmpty)
+    assert(other.nonEmpty)
     assert(primary.length + working.length + other.length === 455)
     assert(primary.toSet - working.toSet - other.toSet === primary.toSet)
     assert(working.toSet - primary.toSet - other.toSet === working.toSet)
@@ -43,7 +43,8 @@ class TimeUsageSuite extends FunSuite with BeforeAndAfterAll {
     val (headerColumns, df) = TimeUsage.read("/timeusage/atussum.csv")
     val (primary, working, other) = TimeUsage.classifiedColumns(headerColumns)
 
-    val summaryDf = TimeUsage.timeUsageSummary(primary, working, other, df)
+    val summaryDf = TimeUsage.timeUsageSummary(primary, working, other, df.sample(withReplacement = false, 0.1))
     assert(summaryDf.head() != null)
+    summaryDf.show(10)
   }
 }
