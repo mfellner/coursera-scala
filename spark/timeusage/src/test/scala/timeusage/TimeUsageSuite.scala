@@ -47,4 +47,13 @@ class TimeUsageSuite extends FunSuite with BeforeAndAfterAll {
     assert(summaryDf.columns === Array("working", "sex", "age", "primaryNeeds", "work", "other"))
     summaryDf.show(10)
   }
+
+  test("timeUsageGrouped") {
+    val (headerColumns, df) = TimeUsage.read("/timeusage/atussum.csv")
+    val (primary, working, other) = TimeUsage.classifiedColumns(headerColumns)
+
+    val summaryDf = TimeUsage.timeUsageSummary(primary, working, other, df.sample(withReplacement = false, 0.1))
+    val groupedDf = TimeUsage.timeUsageGrouped(summaryDf)
+    groupedDf.show(10)
+  }
 }
