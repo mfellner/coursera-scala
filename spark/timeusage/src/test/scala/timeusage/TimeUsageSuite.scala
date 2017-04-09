@@ -32,7 +32,7 @@ class TimeUsageSuite extends FunSuite with BeforeAndAfterAll {
     assert(primary.nonEmpty)
     assert(working.nonEmpty)
     assert(other.nonEmpty)
-    assert(primary.length + working.length + other.length === 282)
+    assert(primary.length + working.length + other.length === 424)
     assert(primary.toSet - working.toSet - other.toSet === primary.toSet)
     assert(working.toSet - primary.toSet - other.toSet === working.toSet)
     assert(other.toSet - primary.toSet - working.toSet === other.toSet)

@@ -73,6 +73,14 @@ object TimeUsage {
     */
   def row(line: List[String]): Row = Row.fromSeq(line.head :: line.tail.map(_.toDouble))
 
+  def isMatchingColumn(prefixes: String*)(column: String): Boolean = {
+    for (prefix <- prefixes) {
+      if (column.startsWith(prefix))
+        return true
+    }
+    false
+  }
+
   /** @return The initial data frame columns partitioned in three groups: primary needs (sleeping, eating, etc.),
     *         work and other (leisure activities)
     * @see https://www.kaggle.com/bls/american-time-use-survey
@@ -88,13 +96,13 @@ object TimeUsage {
     *      “t10”, “t12”, “t13”, “t14”, “t15”, “t16” and “t18” (those which are not part of the previous groups only).
     */
   def classifiedColumns(columnNames: List[String]): (List[Column], List[Column], List[Column]) = {
-    val primaryPrefixes = Seq("t01", "t03", "t11", "t1801", "t1803")
-    val workingPrefixes = Seq("t05", "t1805")
-    val otherPrefixes = Seq("t10", "t12", "t13", "t14", "t15", "t16", "t18")
-    val primary = columnNames.filter(n => primaryPrefixes.foldLeft(false)((b, prefix) => b || n.startsWith(prefix)))
-    val working = columnNames.filter(n => workingPrefixes.foldLeft(false)((b, prefix) => b || n.startsWith(prefix)))
+    val primaryPrefixes = isMatchingColumn("t01", "t03", "t11", "t1801", "t1803") _
+    val workingPrefixes = isMatchingColumn("t05", "t1805") _
+    val otherPrefixes = isMatchingColumn("t02", "t04", "t06", "t07", "t08", "t09", "t10", "t12", "t13", "t14", "t15", "t16", "t18") _
+    val primary = columnNames.filter(primaryPrefixes)
+    val working = columnNames.filter(workingPrefixes)
     val combined = primary.toSet ++ working.toSet
-    val other = columnNames.filter(n => otherPrefixes.foldLeft(false)((b, prefix) => b || n.startsWith(prefix))).filter(!combined.contains(_))
+    val other = columnNames.filter(otherPrefixes).filter(!combined.contains(_))
     (primary.map(new Column(_)), working.map(new Column(_)), other.map(new Column(_)))
   }
 
