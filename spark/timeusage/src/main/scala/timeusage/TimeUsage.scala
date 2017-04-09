@@ -133,30 +133,25 @@ object TimeUsage {
                        otherColumns: List[Column],
                        df: DataFrame): DataFrame = {
 
-    //    val projectWorkingStatus = udf((telfs: Double) => telfs match {
-    //      case i: Double if 1 <= i && i < 3 => "working"
-    //      case _ => "not working"
-    //    })
-    //
-    //    val projectSex = udf((tesex: Double) => tesex match {
-    //      case 1F => "make"
-    //      case _ => "female"
-    //    })
-    //
-    //    val projectAge = udf((teage: Double) => teage match {
-    //      case i: Double if 15 <= i && i <= 22 => "young"
-    //      case i: Double if 23 <= i && i <= 55 => "active"
-    //      case _ => "elder"
-    //    })
+    val projectWorkingStatus = udf((telfs: Double) => telfs match {
+      case i: Double if 1 <= i && i < 3 => "working"
+      case _ => "not working"
+    })
 
-    //    val intermediaryDf = df
-    //      .withColumn("telfs_", projectWorkingStatus('telfs))
-    //      .withColumn("tesex_", projectSex('tesex))
-    //      .withColumn("teage_", projectAge('teage))
+    val projectSex = udf((tesex: Double) => tesex match {
+      case 1F => "male"
+      case _ => "female"
+    })
 
-    val workingStatusProjection: Column = $"telfs"
-    val sexProjection: Column = $"tesex"
-    val ageProjection: Column = $"teage"
+    val projectAge = udf((teage: Double) => teage match {
+      case i: Double if 15 <= i && i <= 22 => "young"
+      case i: Double if 23 <= i && i <= 55 => "active"
+      case _ => "elder"
+    })
+
+    val workingStatusProjection: Column = projectWorkingStatus($"telfs").as("working")
+    val sexProjection: Column = projectSex($"tesex").as("sex")
+    val ageProjection: Column = projectAge($"teage").as("age")
 
     val primaryNeedsProjection: Column = primaryNeedsColumns.reduce(_ + _).as("primaryNeeds")
     val workProjection: Column = workColumns.reduce(_ + _).as("work")
