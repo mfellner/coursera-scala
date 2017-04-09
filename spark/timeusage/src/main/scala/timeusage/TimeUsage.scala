@@ -1,5 +1,6 @@
 package timeusage
 
+import java.math.MathContext
 import java.nio.file.Paths
 
 import org.apache.spark.sql._
@@ -244,6 +245,9 @@ object TimeUsage {
       row.getAs("other")
     ))
 
+  def roundToScale(d: Double, s: Int = 1): Double =
+    BigDecimal(d).setScale(s, BigDecimal.RoundingMode.HALF_UP).toDouble
+
   /**
     * @return Same as `timeUsageGrouped`, but using the typed API when possible
     * @param summed Dataset returned by the `timeUsageSummaryTyped` method
@@ -266,7 +270,13 @@ object TimeUsage {
       )
       .map({
         case ((working, sex, age), primaryNeeds, work, other) =>
-          TimeUsageRow(working, sex, age, primaryNeeds, work, other)
+          TimeUsageRow(
+            working,
+            sex,
+            age,
+            roundToScale(primaryNeeds),
+            roundToScale(work),
+            roundToScale(other))
       })
       .orderBy("working", "sex", "age")
   }
