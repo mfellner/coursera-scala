@@ -90,10 +90,11 @@ object TimeUsage {
   def classifiedColumns(columnNames: List[String]): (List[Column], List[Column], List[Column]) = {
     val primaryPrefixes = Seq("t01", "t03", "t11", "t1801", "t1803")
     val workingPrefixes = Seq("t05", "t1805")
+    val otherPrefixes = Seq("t10", "t12", "t13", "t14", "t15", "t16", "t18")
     val primary = columnNames.filter(n => primaryPrefixes.foldLeft(false)((b, prefix) => b || n.startsWith(prefix)))
     val working = columnNames.filter(n => workingPrefixes.foldLeft(false)((b, prefix) => b || n.startsWith(prefix)))
     val combined = primary.toSet ++ working.toSet
-    val other = columnNames.filter(!combined.contains(_))
+    val other = columnNames.filter(n => otherPrefixes.foldLeft(false)((b, prefix) => b || n.startsWith(prefix))).filter(!combined.contains(_))
     (primary.map(new Column(_)), working.map(new Column(_)), other.map(new Column(_)))
   }
 
