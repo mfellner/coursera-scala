@@ -162,9 +162,9 @@ object TimeUsage {
     val sexProjection: Column = projectSex($"tesex").as("sex")
     val ageProjection: Column = projectAge($"teage").as("age")
 
-    val primaryNeedsProjection: Column = primaryNeedsColumns.reduce(_ + _).as("primaryNeeds")
-    val workProjection: Column = workColumns.reduce(_ + _).as("work")
-    val otherProjection: Column = otherColumns.reduce(_ + _).as("other")
+    val primaryNeedsProjection: Column = primaryNeedsColumns.reduce(_ + _) / 60 as "primaryNeeds"
+    val workProjection: Column = workColumns.reduce(_ + _) / 60 as "work"
+    val otherProjection: Column = otherColumns.reduce(_ + _) / 60 as "other"
 
     df.select(
       workingStatusProjection,
