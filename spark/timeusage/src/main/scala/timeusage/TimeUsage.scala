@@ -187,11 +187,11 @@ object TimeUsage {
   def timeUsageGrouped(summed: DataFrame): DataFrame = summed
     .groupBy("working", "sex", "age")
     .agg(
-      avg("primaryNeeds").as("primaryNeeds"),
-      avg("work").as("work"),
-      avg("other").as("other")
+      round(avg("primaryNeeds"), 1).as("primaryNeeds"),
+      round(avg("work"), 1).as("work"),
+      round(avg("other"), 1).as("other")
     )
-    .sort("working", "sex", "age")
+    .orderBy("working", "sex", "age")
 
   /**
     * @return Same as `timeUsageGrouped`, but using a plain SQL query instead
@@ -211,9 +211,9 @@ object TimeUsage {
       working,
       sex,
       age,
-      avg(primaryNeeds) as primaryNeeds,
-      avg(work) as work,
-      avg(other) as other
+      round(avg(primaryNeeds), 1) as primaryNeeds,
+      round(avg(work), 1) as work,
+      round(avg(other), 1) as other
     FROM summed
     GROUP BY working, sex, age
     ORDER BY working, sex, age
@@ -227,7 +227,14 @@ object TimeUsage {
     *                           cast them at the same time.
     */
   def timeUsageSummaryTyped(timeUsageSummaryDf: DataFrame): Dataset[TimeUsageRow] =
-    ???
+    timeUsageSummaryDf.map(row => TimeUsageRow(
+      row.getAs("working"),
+      row.getAs("sex"),
+      row.getAs("age"),
+      row.getAs("primaryNeeds"),
+      row.getAs("work"),
+      row.getAs("other")
+    ))
 
   /**
     * @return Same as `timeUsageGrouped`, but using the typed API when possible
@@ -242,7 +249,18 @@ object TimeUsage {
     */
   def timeUsageGroupedTyped(summed: Dataset[TimeUsageRow]): Dataset[TimeUsageRow] = {
     import org.apache.spark.sql.expressions.scalalang.typed
-    ???
+    summed
+      .groupByKey(row => (row.working, row.sex, row.age))
+      .agg(
+        typed.avg(_.primaryNeeds),
+        typed.avg(_.work),
+        typed.avg(_.other)
+      )
+      .map({
+        case ((working, sex, age), primaryNeeds, work, other) =>
+          TimeUsageRow(working, sex, age, primaryNeeds, work, other)
+      })
+      .orderBy("working", "sex", "age")
   }
 }
 

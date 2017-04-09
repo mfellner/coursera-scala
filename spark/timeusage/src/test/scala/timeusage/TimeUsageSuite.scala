@@ -16,10 +16,11 @@ import scala.util.Random
 @RunWith(classOf[JUnitRunner])
 class TimeUsageSuite extends FunSuite with BeforeAndAfterAll {
 
+  lazy val (headerColumns, df) = TimeUsage.read("/timeusage/atussum.csv")
+
   test("read data source") {
-    val (headerColumns, dataFrame) = TimeUsage.read("/timeusage/atussum.csv")
     assert(headerColumns.length === 455)
-    val head = dataFrame.head()
+    val head = df.head()
     assert(head.length === 455)
     assert(head(0).isInstanceOf[String])
     for (i <- 1 until head.length)
@@ -27,8 +28,6 @@ class TimeUsageSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   test("classifiedColumns") {
-    val (headerColumns, _) = TimeUsage.read("/timeusage/atussum.csv")
-
     val (primary, working, other) = TimeUsage.classifiedColumns(headerColumns)
     assert(primary.nonEmpty)
     assert(working.nonEmpty)
@@ -40,7 +39,6 @@ class TimeUsageSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   test("timeUsageSummary") {
-    val (headerColumns, df) = TimeUsage.read("/timeusage/atussum.csv")
     val (primary, working, other) = TimeUsage.classifiedColumns(headerColumns)
 
     val summaryDf = TimeUsage.timeUsageSummary(primary, working, other, df.sample(withReplacement = false, 0.1))
@@ -49,7 +47,6 @@ class TimeUsageSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   test("timeUsageGrouped") {
-    val (headerColumns, df) = TimeUsage.read("/timeusage/atussum.csv")
     val (primary, working, other) = TimeUsage.classifiedColumns(headerColumns)
 
     val summaryDf = TimeUsage.timeUsageSummary(primary, working, other, df.sample(withReplacement = false, 0.1))
@@ -58,11 +55,25 @@ class TimeUsageSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   test("timeUsageGroupedSql") {
-    val (headerColumns, df) = TimeUsage.read("/timeusage/atussum.csv")
     val (primary, working, other) = TimeUsage.classifiedColumns(headerColumns)
 
     val summaryDf = TimeUsage.timeUsageSummary(primary, working, other, df.sample(withReplacement = false, 0.1))
     val groupedDf = TimeUsage.timeUsageGroupedSql(summaryDf)
     groupedDf.show(10)
+  }
+
+  test("timeUsageSummaryTyped") {
+    val (primary, working, other) = TimeUsage.classifiedColumns(headerColumns)
+    val summaryDf = TimeUsage.timeUsageSummary(primary, working, other, df.sample(withReplacement = false, 0.1))
+    val typedDf = TimeUsage.timeUsageSummaryTyped(summaryDf)
+    typedDf.show(10)
+  }
+
+  test("timeUsageGroupedTyped") {
+    val (primary, working, other) = TimeUsage.classifiedColumns(headerColumns)
+    val summaryDf = TimeUsage.timeUsageSummary(primary, working, other, df.sample(withReplacement = false, 0.1))
+    val typedDf = TimeUsage.timeUsageSummaryTyped(summaryDf)
+    val groupedTypedDf = TimeUsage.timeUsageGroupedTyped(typedDf)
+    groupedTypedDf.show(10)
   }
 }
