@@ -56,4 +56,13 @@ class TimeUsageSuite extends FunSuite with BeforeAndAfterAll {
     val groupedDf = TimeUsage.timeUsageGrouped(summaryDf)
     groupedDf.show(10)
   }
+
+  test("timeUsageGroupedSql") {
+    val (headerColumns, df) = TimeUsage.read("/timeusage/atussum.csv")
+    val (primary, working, other) = TimeUsage.classifiedColumns(headerColumns)
+
+    val summaryDf = TimeUsage.timeUsageSummary(primary, working, other, df.sample(withReplacement = false, 0.1))
+    val groupedDf = TimeUsage.timeUsageGroupedSql(summaryDf)
+    groupedDf.show(10)
+  }
 }
